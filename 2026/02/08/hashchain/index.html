@@ -19,21 +19,21 @@
   <meta name="author" content="John Doe">
   <meta name="keywords" content="">
   
-    <meta name="description" content="challenge_final — WriteupAnalysisThe binary reads input from stdin and requires at least 15 characters.For an input of length N, it prints N+1 hexadecimal hashes. Example: 1238350e5...6bf156...591a83.">
+    <meta name="description" content="Writeup: HashChain (NullCon CTF 2026)This challenge revolves around turning cryptographic output into executable code. While MD5 is widely considered insecure, this binary demonstrates a far more unus">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Hashinator reverse">
-<meta property="og:url" content="https://defexnn.github.io/my-blog/2026/02/08/hasinator/index.html">
+<meta property="og:title" content="HashChain">
+<meta property="og:url" content="https://defexnn.github.io/my-blog/2026/02/08/hashchain/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="challenge_final — WriteupAnalysisThe binary reads input from stdin and requires at least 15 characters.For an input of length N, it prints N+1 hexadecimal hashes. Example: 1238350e5...6bf156...591a83.">
+<meta property="og:description" content="Writeup: HashChain (NullCon CTF 2026)This challenge revolves around turning cryptographic output into executable code. While MD5 is widely considered insecure, this binary demonstrates a far more unus">
 <meta property="og:locale" content="en_US">
-<meta property="article:published_time" content="2026-02-08T01:30:33.497Z">
-<meta property="article:modified_time" content="2026-02-08T01:35:43.815Z">
+<meta property="article:published_time" content="2026-02-08T13:14:24.470Z">
+<meta property="article:modified_time" content="2026-02-08T02:33:10.117Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
   
   
   
-  <title>Hashinator reverse - Hexo</title>
+  <title>HashChain - Hexo</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -175,7 +175,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="Hashinator reverse"></span>
+            <span id="subtitle" data-typed-text="HashChain"></span>
           
         </div>
 
@@ -186,8 +186,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2026-02-08 03:30" pubdate>
-          February 8, 2026 am
+        <time datetime="2026-02-08 15:14" pubdate>
+          February 8, 2026 pm
         </time>
       </span>
     
@@ -198,7 +198,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          1.8k words
+          3.2k words
         
       </span>
     
@@ -209,7 +209,7 @@
         
         
         
-          16 mins
+          28 mins
         
       </span>
     
@@ -246,51 +246,102 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">Hashinator reverse</h1>
+            <h1 id="seo-header">HashChain</h1>
             
             
               <div class="markdown-body">
                 
-                <h1 id="challenge-final-—-Writeup"><a href="#challenge-final-—-Writeup" class="headerlink" title="challenge_final — Writeup"></a>challenge_final — Writeup</h1><h2 id="Analysis"><a href="#Analysis" class="headerlink" title="Analysis"></a>Analysis</h2><p>The binary reads input from <strong>stdin</strong> and requires at least 15 characters.<br>For an input of length <code>N</code>, it prints <code>N+1</code> hexadecimal hashes.</p>
-<p>Example:</p>
-<figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs erlang"><span class="hljs-number">8350e5</span>...<br><span class="hljs-number">6</span>bf156...<br><span class="hljs-number">591</span>a83...<br></code></pre></td></tr></table></figure>
-
-<p>This indicates the program exposes <strong>incremental hash states</strong>:</p>
-<figure class="highlight abnf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs abnf"><span class="hljs-attribute">H0</span> <span class="hljs-operator">=</span> hash(<span class="hljs-string">&quot;&quot;</span>)<br><span class="hljs-attribute">H1</span> <span class="hljs-operator">=</span> hash(first_char)<br><span class="hljs-attribute">H2</span> <span class="hljs-operator">=</span> hash(first_two_chars)<br>...<br></code></pre></td></tr></table></figure>
-
-<p>So each line corresponds to the hash after processing another byte.</p>
+                <h2 id="Writeup-HashChain-NullCon-CTF-2026"><a href="#Writeup-HashChain-NullCon-CTF-2026" class="headerlink" title="Writeup: HashChain (NullCon CTF 2026)"></a>Writeup: HashChain (NullCon CTF 2026)</h2><p>This challenge revolves around turning cryptographic output into executable code. While MD5 is widely considered insecure, this binary demonstrates a far more unusual problem — <strong>executing hash digests directly as machine instructions</strong>.</p>
 <hr>
-<h2 id="Vulnerability"><a href="#Vulnerability" class="headerlink" title="Vulnerability"></a>Vulnerability</h2><p>The binary leaks <strong>internal hash states</strong>, turning it into a hashing oracle.</p>
-<p>Instead of reversing the algorithm, we can reconstruct the flag by matching each prefix hash.</p>
-<p>Important detail:</p>
-<figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs livecodeserver">hash[<span class="hljs-number">0</span>] → <span class="hljs-literal">empty</span> <span class="hljs-keyword">string</span><br>hash[i] → <span class="hljs-keyword">first</span> i <span class="hljs-keyword">characters</span><br></code></pre></td></tr></table></figure>
+<h3 id="1-Analysis"><a href="#1-Analysis" class="headerlink" title="1. Analysis"></a>1. Analysis</h3><p>We are given a decompiled <code>main()</code> function that performs the following steps:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs c">v7 = mmap((<span class="hljs-type">void</span> *)<span class="hljs-number">0x40000000</span>, <span class="hljs-number">0x640u</span>, <span class="hljs-number">7</span>, ...);   <span class="hljs-comment">// RWX memory for hashes</span><br>s  = mmap((<span class="hljs-type">void</span> *)<span class="hljs-number">0x41000000</span>, <span class="hljs-number">0x1000000u</span>, <span class="hljs-number">7</span>, ...); <span class="hljs-comment">// huge RWX region</span><br><span class="hljs-built_in">memset</span>(s, <span class="hljs-number">144</span>, <span class="hljs-number">0x1000000u</span>); <span class="hljs-comment">// fill with NOPs (0x90)</span><br></code></pre></td></tr></table></figure>
 
-<p>Therefore, when brute-forcing character <code>pos</code>, compare:</p>
-<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">hash</span>[pos + <span class="hljs-number">1</span>]<br></code></pre></td></tr></table></figure>
+<p>Near the end of the NOP sled, the program plants a tiny trampoline:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs c">*((_BYTE *)s + <span class="hljs-number">16777210</span>) = <span class="hljs-number">104</span>;  <span class="hljs-comment">// push</span><br>*(_DWORD *)(v5 + <span class="hljs-number">1</span>) = win;<br>v5[<span class="hljs-number">5</span>] = <span class="hljs-number">-61</span>; <span class="hljs-comment">// ret</span><br></code></pre></td></tr></table></figure>
 
-<p>(not <code>hash[pos]</code>).</p>
+<p>This translates to:</p>
+<figure class="highlight avrasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs avrasm"><span class="hljs-keyword">push</span> win<br><span class="hljs-keyword">ret</span><br></code></pre></td></tr></table></figure>
+
+<p>So if execution ever lands anywhere inside the sled, it will slide down and call <code>win()</code>, which prints the flag.</p>
 <hr>
-<h2 id="Flag-Length"><a href="#Flag-Length" class="headerlink" title="Flag Length"></a>Flag Length</h2><p>Given <code>54</code> hashes:</p>
-<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">flag_length</span> = <span class="hljs-number">54</span> - <span class="hljs-number">1</span> = <span class="hljs-number">53</span><br></code></pre></td></tr></table></figure>
+<h4 id="Hash-Storage-Loop"><a href="#Hash-Storage-Loop" class="headerlink" title="Hash Storage Loop"></a>Hash Storage Loop</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs c">MD5(s1, v8, (<span class="hljs-type">char</span> *)v7 + <span class="hljs-number">16</span> * v9);<br>...<br>v7();   <span class="hljs-comment">// execute hashes as code</span><br></code></pre></td></tr></table></figure>
 
+<p>Each MD5 digest (16 bytes) is written into an executable buffer and later executed like a function.</p>
+<p>⚠️ <strong>No validation is performed.</strong> Whatever bytes MD5 produces become raw CPU instructions.</p>
 <hr>
-<h2 id="Attack-Strategy"><a href="#Attack-Strategy" class="headerlink" title="Attack Strategy"></a>Attack Strategy</h2><ol>
-<li>Assume flag format <code>ENO{...}</code>.</li>
-<li>Build a candidate string of the correct length.</li>
-<li>Replace one character at a time.</li>
-<li>Run the binary.</li>
-<li>Match the hash at <code>pos+1</code>.</li>
-<li>Lock the correct character and continue.</li>
+<h3 id="2-The-Vulnerability-Executable-Hashes"><a href="#2-The-Vulnerability-Executable-Hashes" class="headerlink" title="2. The Vulnerability: Executable Hashes"></a>2. The Vulnerability: Executable Hashes</h3><p>Instead of searching for a full shellcode preimage (which would be extremely difficult), we only need the <strong>first few bytes</strong> of the hash to form a valid jump instruction.</p>
+<p>Important stack detail:</p>
+<figure class="highlight ada"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs ada">s <span class="hljs-keyword">is</span> stored <span class="hljs-keyword">at</span> [ebp-<span class="hljs-number">0</span>x18]<br></code></pre></td></tr></table></figure>
+
+<p>And <code>s</code> points to:</p>
+<figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs livecodeserver"><span class="hljs-number">0x41000000</span>  -&gt; <span class="hljs-built_in">start</span> <span class="hljs-keyword">of</span> <span class="hljs-keyword">the</span> NOP sled<br></code></pre></td></tr></table></figure>
+
+<p>If we can generate an MD5 whose first bytes decode to:</p>
+<figure class="highlight x86asm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs x86asm"><span class="hljs-keyword">jmp</span> <span class="hljs-built_in">dword</span> <span class="hljs-built_in">ptr</span> [<span class="hljs-built_in">ebp</span>-<span class="hljs-number">0x18</span>]<br></code></pre></td></tr></table></figure>
+
+<p>execution immediately jumps into the sled → trampoline → <code>win()</code>.</p>
+<hr>
+<h3 id="3-Crafting-the-Jump-Instruction"><a href="#3-Crafting-the-Jump-Instruction" class="headerlink" title="3. Crafting the Jump Instruction"></a>3. Crafting the Jump Instruction</h3><p>The x86 encoding for:</p>
+<figure class="highlight x86asm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs x86asm"><span class="hljs-keyword">jmp</span> <span class="hljs-built_in">dword</span> <span class="hljs-built_in">ptr</span> [<span class="hljs-built_in">ebp</span>-<span class="hljs-number">0x18</span>]<br></code></pre></td></tr></table></figure>
+
+<p>is:</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">FF</span> <span class="hljs-number">65</span> E8<br></code></pre></td></tr></table></figure>
+
+<p>So the problem reduces to brute forcing a string whose MD5 begins with:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs">ff65e8<br></code></pre></td></tr></table></figure>
+
+<p>Expected difficulty:</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">2</span>^<span class="hljs-number">24</span> ≈ <span class="hljs-number">16</span>.<span class="hljs-number">7</span> million hashes<br></code></pre></td></tr></table></figure>
+
+<p>Completely feasible.</p>
+<p><em>(Even faster approach: search for <code>FF 65 ??</code> — only 2 fixed bytes → ~65k attempts.)</em></p>
+<hr>
+<h3 id="4-Exploitation-Strategy"><a href="#4-Exploitation-Strategy" class="headerlink" title="4. Exploitation Strategy"></a>4. Exploitation Strategy</h3><ol>
+<li>Brute-force strings until one produces the desired MD5 prefix.</li>
+<li>Send that string to the service.</li>
+<li>Type <code>doit</code> to trigger execution.</li>
+<li>The jump lands in the NOP sled and calls <code>win()</code>.</li>
 </ol>
-<p>No need to reverse the hash function.</p>
 <hr>
-<h2 id="Solver"><a href="#Solver" class="headerlink" title="Solver"></a>Solver</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">import</span> subprocess<br><span class="hljs-keyword">import</span> string<br><br>BIN = <span class="hljs-string">&quot;./challenge_final&quot;</span><br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">run</span>(<span class="hljs-params">s</span>):<br>    p = subprocess.run(<br>        [BIN],<br>        <span class="hljs-built_in">input</span>=(s + <span class="hljs-string">&quot;\n&quot;</span>).encode(),<br>        stdout=subprocess.PIPE<br>    )<br>    <span class="hljs-keyword">return</span> [x.strip() <span class="hljs-keyword">for</span> x <span class="hljs-keyword">in</span> p.stdout.decode().splitlines() <span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(x.strip()) == <span class="hljs-number">32</span>]<br><br><br><span class="hljs-keyword">with</span> <span class="hljs-built_in">open</span>(<span class="hljs-string">&quot;hashes.txt&quot;</span>) <span class="hljs-keyword">as</span> f:<br>    TARGET = [x.strip() <span class="hljs-keyword">for</span> x <span class="hljs-keyword">in</span> f <span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(x.strip()) == <span class="hljs-number">32</span>]<br><br>flag_len = <span class="hljs-built_in">len</span>(TARGET) - <span class="hljs-number">1</span><br>flag = <span class="hljs-built_in">list</span>(<span class="hljs-string">&quot;ENO&#123;&quot;</span> + <span class="hljs-string">&quot;A&quot;</span> * (flag_len - <span class="hljs-number">4</span>))<br><br>charset = string.ascii_letters + string.digits + <span class="hljs-string">&quot;_&#123;&#125;!-?&quot;</span><br><br><span class="hljs-keyword">for</span> pos <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-number">4</span>, flag_len):<br>    <span class="hljs-keyword">for</span> c <span class="hljs-keyword">in</span> charset:<br>        flag[pos] = c<br>        hashes = run(<span class="hljs-string">&quot;&quot;</span>.join(flag))<br><br>        <span class="hljs-keyword">if</span> hashes[pos+<span class="hljs-number">1</span>] == TARGET[pos+<span class="hljs-number">1</span>]:<br>            <span class="hljs-keyword">break</span><br><br>flag[-<span class="hljs-number">1</span>] = <span class="hljs-string">&quot;&#125;&quot;</span><br><br><span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;FLAG:&quot;</span>, <span class="hljs-string">&quot;&quot;</span>.join(flag))<br></code></pre></td></tr></table></figure>
+<h4 id="Brute-Force-Script"><a href="#Brute-Force-Script" class="headerlink" title="Brute Force Script"></a>Brute Force Script</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">import</span> hashlib<br><span class="hljs-keyword">import</span> itertools<br><span class="hljs-keyword">import</span> string<br><br>TARGET = <span class="hljs-built_in">bytes</span>.fromhex(<span class="hljs-string">&quot;ff65e8&quot;</span>)<br>alphabet = string.ascii_letters + string.digits<br><br><span class="hljs-keyword">for</span> L <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-number">1</span>, <span class="hljs-number">8</span>):<br>    <span class="hljs-keyword">for</span> tup <span class="hljs-keyword">in</span> itertools.product(alphabet, repeat=L):<br>        s = <span class="hljs-string">&quot;&quot;</span>.join(tup).encode()<br>        <span class="hljs-keyword">if</span> hashlib.md5(s).digest().startswith(TARGET):<br>            <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;FOUND:&quot;</span>, s)<br>            <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;MD5:&quot;</span>, hashlib.md5(s).hexdigest())<br>            exit()<br></code></pre></td></tr></table></figure>
+
+<p>After ~43 million attempts, we found:</p>
+<figure class="highlight nestedtext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs nestedtext"><span class="hljs-attribute">Input</span><span class="hljs-punctuation">:</span> <span class="hljs-string">Ab5Gxo</span><br><span class="hljs-attribute">MD5</span><span class="hljs-punctuation">  :</span> <span class="hljs-string">ff65e8ad7f82c76e0eb5436dd309d455</span><br></code></pre></td></tr></table></figure>
 
 <hr>
-<h2 id="Root-Cause"><a href="#Root-Cause" class="headerlink" title="Root Cause"></a>Root Cause</h2><p>The program exposes intermediate hash states instead of validating only the final digest.</p>
-<p>This allows reconstruction of the secret sequentially without reversing the algorithm.</p>
+<h3 id="5-Triggering-the-Exploit"><a href="#5-Triggering-the-Exploit" class="headerlink" title="5. Triggering the Exploit"></a>5. Triggering the Exploit</h3><p>Using netcat:</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">nc</span> <span class="hljs-number">52.59.124.14</span> <span class="hljs-number">5010</span><br></code></pre></td></tr></table></figure>
+
+<p>Interaction:</p>
+<figure class="highlight node-repl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs node-repl">Welcome to HashChain!<br><span class="hljs-meta prompt_">&gt;</span> <span class="language-javascript"><span class="hljs-title class_">Ab5Gxo</span></span><br>Hash 1 stored.<br><span class="hljs-meta prompt_">&gt;</span> <span class="language-javascript">doit</span><br>Executing 1 hash(es) as code...<br>ENO&#123;h4sh_ch41n_jump_t0_v1ct0ry&#125;<br></code></pre></td></tr></table></figure>
+
 <hr>
-<h2 id="Flag"><a href="#Flag" class="headerlink" title="Flag"></a>Flag</h2><figure class="highlight erlang-repl"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs erlang-repl">ENO&#123;MD2_1S_S00_0ld_B3tter_Implement_S0m3Th1ng_ElsE!!&#125;<br></code></pre></td></tr></table></figure>
+<h3 id="6-Why-This-Works"><a href="#6-Why-This-Works" class="headerlink" title="6. Why This Works"></a>6. Why This Works</h3><p>This challenge is a textbook example of <strong>W^X violation</strong> — memory is both writable and executable.</p>
+<p>Key mistakes:</p>
+<ul>
+<li>Executable memory created with <code>mmap(..., PROT_READ | PROT_WRITE | PROT_EXEC)</code></li>
+<li>User-controlled bytes placed directly into that memory</li>
+<li>Hash output trusted as safe data</li>
+<li>A giant NOP sled leading to a privileged function</li>
+</ul>
+<p>No collision attack was required. No shellcode was required.</p>
+<p>We simply turned MD5 into an instruction generator.</p>
+<hr>
+<h3 id="7-Conclusion"><a href="#7-Conclusion" class="headerlink" title="7. Conclusion"></a>7. Conclusion</h3><p>The challenge highlights an important lesson:</p>
+<blockquote>
+<p><strong>Cryptographic hashes are not inherently safe — they are just bytes.</strong></p>
+</blockquote>
+<p>If those bytes are ever executed, the hash function becomes irrelevant; the program effectively hands the attacker control of the instruction pointer.</p>
+<p>Proper mitigations include:</p>
+<ul>
+<li>Enforcing <strong>W^X (Write XOR Execute)</strong> memory protections</li>
+<li>Never executing derived data</li>
+<li>Using control-flow protections (CFI)</li>
+<li>Avoiding RWX mappings entirely</li>
+</ul>
+<hr>
+<p><strong>Flag:</strong> <code>ENO{h4sh_ch41n_jump_t0_v1ct0ry}</code></p>
+<hr>
 
                 
               </div>
@@ -308,8 +359,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>Hashinator reverse</div>
-      <div>https://defexnn.github.io/my-blog/2026/02/08/hasinator/</div>
+      <div>HashChain</div>
+      <div>https://defexnn.github.io/my-blog/2026/02/08/hashchain/</div>
     </div>
     <div class="license-meta">
       
@@ -353,18 +404,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/my-blog/2026/02/08/atomizer/" title="Atomizer/pwn">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">Atomizer/pwn</span>
-                        <span class="visible-mobile">Previous</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/my-blog/2026/02/01/Very_Simple_Framer/" title="Very Simple Framer">
-                        <span class="hidden-mobile">Very Simple Framer</span>
+                      <a href="/my-blog/2026/02/08/atomizer/" title="Atomizer/pwn">
+                        <span class="hidden-mobile">Atomizer/pwn</span>
                         <span class="visible-mobile">Next</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
